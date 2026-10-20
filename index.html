@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b1120">
+<title>Biodiésel: El Reto</title>
+<style>
+  :root{
+    --bg:#0b1120; --panel:#131d33; --line:#2a3a5c; --txt:#e6edf7;
+    --lime:#a3e635; --amber:#fbbf24; --danger:#fb7185; --sky:#38bdf8;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    min-height:100dvh; background:
+      radial-gradient(900px 500px at 80% -10%, rgba(56,189,248,.14), transparent 60%),
+      radial-gradient(700px 400px at 0% 100%, rgba(163,230,53,.10), transparent 60%),
+      var(--bg);
+    color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    display:flex; justify-content:center;
+    overflow-x:hidden;
+  }
+  .app{width:100%; max-width:480px; min-height:100dvh; padding:16px 16px 22px; display:flex; flex-direction:column; gap:14px}
+  .hud{display:none; align-items:center; justify-content:space-between; gap:10px; font-size:12px; letter-spacing:.4px; color:#9fb0cc}
+  .hud.on{display:flex}
+  .hud b{color:var(--lime); font-size:14px}
+  .hud .dot{width:6px;height:6px;border-radius:50%;background:var(--lime);display:inline-block;margin-right:6px}
+  .screen{display:none; flex:1; flex-direction:column; gap:14px}
+  .screen.on{display:flex; animation:in .35s ease}
+  @keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  h1{font-size:30px; line-height:1.05; margin:6px 0 0; letter-spacing:-.5px}
+  h1 span{color:var(--lime)}
+  .sub{color:#9fb0cc; font-size:14px; line-height:1.45; margin:0}
+  .kicker{font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--sky); font-weight:700}
+  .card{background:linear-gradient(180deg,#152039,#111a2e); border:1px solid var(--line); border-radius:18px; padding:16px}
+  .btn{
+    width:100%; padding:16px; border:none; border-radius:16px; cursor:pointer;
+    font-size:16px; font-weight:800; letter-spacing:.3px;
+    background:linear-gradient(180deg,#c3f458,#8fd21f); color:#14210a;
+    box-shadow:0 10px 26px rgba(163,230,53,.22);
+    transition:transform .12s ease, box-shadow .12s;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn.ghost{background:transparent; color:var(--txt); border:1px solid var(--line); box-shadow:none; font-weight:600}
+  input{
+    width:100%; padding:15px; border-radius:14px; border:1px solid var(--line);
+    background:#0e1729; color:var(--txt); font-size:16px; outline:none;
+  }
+  input:focus{border-color:var(--lime)}
+  .rules{display:flex; flex-direction:column; gap:8px; font-size:13.5px; color:#aab8d2}
+  .rules div{display:flex; gap:9px; align-items:flex-start}
+  .rules i{color:var(--lime); font-style:normal}
+
+  .stage-title{font-size:20px; margin:0; font-weight:800}
+  .stage-hint{font-size:13px; color:#93a4c2; margin:0 0 2px}
+  .timeline{display:flex; gap:6px}
+  .slot{
+    flex:1; height:46px; border-radius:11px; border:1px dashed #33456b;
+    display:grid; place-items:center; font-size:18px; color:#48608a; transition:.25s;
+  }
+  .slot.filled{border:1px solid var(--lime); background:rgba(163,230,53,.12); color:var(--txt); animation:pop .25s ease}
+  @keyframes pop{from{transform:scale(.7)}to{transform:scale(1)}}
+  .pool{display:grid; grid-template-columns:1fr 1fr; gap:9px}
+  .chip{
+    padding:13px 10px; border-radius:14px; border:1px solid var(--line); background:var(--panel);
+    color:var(--txt); font-size:13.5px; font-weight:600; line-height:1.25; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:5px; text-align:center;
+    transition:transform .1s, border-color .2s, opacity .3s;
+  }
+  .chip b{font-size:20px}
+  .chip:active{transform:scale(.96)}
+  .chip.done{opacity:.18; pointer-events:none; border-color:var(--lime)}
+  .chip.shake{animation:shake .35s; border-color:var(--danger)}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+  .beaker{
+    width:200px; height:250px; margin:6px auto 2px; border:3px solid #33456b;
+    border-radius:10px 10px 26px 26px; overflow:hidden; display:flex; flex-direction:column;
+    position:relative; cursor:pointer; box-shadow:inset 0 0 40px rgba(0,0,0,.35);
+  }
+  .layer{position:relative; display:grid; place-items:center; font-size:12px; font-weight:800; letter-spacing:.5px; transition:.2s; border:none; padding:0; font-family:inherit; cursor:pointer; width:100%}
+  .layer span{opacity:.9; padding:5px 9px; border-radius:99px; background:rgba(0,0,0,.35); color:#fff; backdrop-filter:blur(2px)}
+  .layer.top{flex:0 0 55%; background:linear-gradient(180deg,#ffd24a,#f0a91b); color:#4a2c00}
+  .layer.bottom{flex:1; background:linear-gradient(180deg,#5a2c17,#2d130a); color:#ffd7c2}
+  .layer:active{filter:brightness(1.15)}
+  .layer.ok{box-shadow:inset 0 0 0 4px #22c55e}
+  .layer.no{box-shadow:inset 0 0 0 4px var(--danger); animation:shake .35s}
+  .beaker.shake{animation:shake .35s}
+  .qbox{font-size:16.5px; font-weight:700; line-height:1.35; margin:0}
+  .feedback{font-size:13px; line-height:1.45; color:#a9b8d4; min-height:38px; margin:0}
+  .feedback.good{color:#8ee06a}
+  .feedback.bad{color:#ff9aa8}
+
+  .timer{height:6px; background:#1c2a45; border-radius:99px; overflow:hidden}
+  .timer i{display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--lime),var(--amber)); transition:width .1s linear}
+  .qmeta{display:flex; justify-content:space-between; font-size:11px; letter-spacing:1px; color:#7e91b0; text-transform:uppercase; font-weight:700}
+  .answers{display:flex; flex-direction:column; gap:9px}
+  .choice{
+    padding:14px 15px; border-radius:14px; border:1px solid var(--line); background:var(--panel);
+    color:var(--txt); font-size:14.5px; text-align:left; cursor:pointer; line-height:1.35;
+    transition:transform .1s, background .2s, border-color .2s;
+  }
+  .choice:active{transform:scale(.98)}
+  .choice.correct{background:#123c26; border-color:#22c55e}
+  .choice.wrong{background:#43091a; border-color:var(--danger)}
+  .choice:disabled{opacity:.75}
+
+  .score-big{font-size:56px; font-weight:900; line-height:1; letter-spacing:-2px; margin:0; color:var(--lime)}
+  .rank{font-size:21px; font-weight:800; margin:2px 0 0}
+  .medal{font-size:42px; line-height:1.25; display:inline-block; margin-top:6px}
+  .tag{font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#7e91b0; font-weight:700}
+  .foot{text-align:center; font-size:10.5px; letter-spacing:.6px; color:#5d7195; margin-top:auto; padding-top:8px}
+  .confetti i{position:fixed; top:-16px; width:8px; height:14px; border-radius:2px; z-index:9; animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(105vh) rotate(720deg); opacity:.2}}
+  .sound{position:fixed; bottom:12px; right:12px; z-index:20; width:38px; height:38px; border-radius:12px; border:1px solid var(--line); background:rgba(19,29,51,.85); color:#9fb0cc; font-size:16px; cursor:pointer; opacity:.8}
+</style>
+</head>
+<body>
+<button class="sound" id="soundBtn" aria-label="Sonido">🔊</button>
+<div class="app">
+
+  <div class="hud" id="hud">
+    <span><span class="dot"></span><span id="hudStage">Etapa 1 de 3</span></span>
+    <span>Puntos <b id="hudScore">0</b></span>
+  </div>
+
+  <!-- INICIO -->
+  <section class="screen on" id="s-start">
+    <p class="kicker">Química para Ingeniería · PBL</p>
+    <h1>BIODIÉSEL:<br><span>EL RETO</span></h1>
+    <p class="sub">De aceite usado a combustible en 3 minutos. Demuestra lo que aprendiste y gana tu dulce.</p>
+    <div class="card rules">
+      <div><i>1</i><span>Ordena el proceso de transesterificación.</span></div>
+      <div><i>2</i><span>Separa las fases tocando el vaso.</span></div>
+      <div><i>3</i><span>Responde 5 preguntas relámpago.</span></div>
+    </div>
+    <input id="name" maxlength="16" placeholder="Tu nombre o apodo" autocomplete="off">
+    <button class="btn" id="startBtn">JUGAR</button>
+    <p class="foot">MUESTRA TU PUNTAJE AL FINAL PARA RECLAMAR TU DULCE</p>
+  </section>
+
+  <!-- ETAPA 1 -->
+  <section class="screen" id="s-order">
+    <p class="stage-title">1. Ordena el proceso</p>
+    <p class="stage-hint">Toca los pasos en el orden correcto, del primero al último.</p>
+    <div class="timeline" id="timeline"></div>
+    <div class="pool" id="pool"></div>
+    <p class="feedback" id="orderFb">Cada acierto suma 150 puntos. Un error resta 40.</p>
+  </section>
+
+  <!-- ETAPA 2 -->
+  <section class="screen" id="s-sep">
+    <p class="stage-title">2. Separa las fases</p>
+    <p class="stage-hint" id="sepHint">Toca la parte del vaso que corresponda.</p>
+    <div class="beaker" id="beaker">
+      <button class="layer top" data-layer="top"><span>FASE SUPERIOR</span></button>
+      <button class="layer bottom" data-layer="bottom"><span>FASE INFERIOR</span></button>
+    </div>
+    <div class="card">
+      <p class="qbox" id="sepQ">¿Dónde queda el biodiésel?</p>
+      <p class="feedback" id="sepFb"></p>
+    </div>
+  </section>
+
+  <!-- ETAPA 3 -->
+  <section class="screen" id="s-quiz">
+    <p class="stage-title">3. Reto relámpago</p>
+    <div class="qmeta"><span id="qCount">Pregunta 1 de 5</span><span id="qPts">+200</span></div>
+    <div class="timer"><i id="timerBar"></i></div>
+    <p class="qbox" id="qText"></p>
+    <div class="answers" id="answers"></div>
+    <p class="feedback" id="quizFb"></p>
+  </section>
+
+  <!-- FINAL -->
+  <section class="screen" id="s-end">
+    <div style="text-align:center">
+      <div class="medal" id="medal">🏅</div>
+      <p class="score-big" id="finalScore">0</p>
+      <p class="tag" id="finalName">JUGADOR</p>
+      <p class="rank" id="finalRank">Aprendiz</p>
+      <p class="sub" id="finalMsg" style="margin-top:6px"></p>
+      <p class="tag" style="color:var(--amber); margin:10px 0 0">¡Muy bien! Gracias por participar. Puedes tomar tu premio.</p>
+    </div>
+    <button class="btn" id="againBtn">JUGAR OTRA VEZ</button>
+    <p class="foot">BIODIÉSEL A PARTIR DE ACEITE DE COCINA USADO · TRANSESTERIFICACIÓN ALCALINA</p>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STEPS = [
+    {id:"filtro",  icon:"🧽", label:"Filtrar el aceite"},
+    {id:"metox",   icon:"🧪", label:"Preparar metóxido"},
+    {id:"mezcla",  icon:"🥄", label:"Mezclar y agitar"},
+    {id:"reposo",  icon:"⏳", label:"Reposo 2 días"},
+    {id:"decanta", icon:"⚗️", label:"Decantar fases"},
+    {id:"lavado",  icon:"💧", label:"Lavar biodiésel"}
+  ];
+
+  var PHASES = [
+    {q:"¿Dónde queda el biodiésel?", a:"top",
+     good:"Correcto. El FAME es menos denso y apolar, por eso flota.",
+     bad:"Casi. El biodiésel es la fase clara de arriba."},
+    {q:"Toca la fase más densa", a:"bottom",
+     good:"Exacto. La glicerina ronda 1.26 g/mL y se va al fondo.",
+     bad:"No. La glicerina es más pesada y queda abajo."},
+    {q:"Toca la fase que arrastra metanol, sosa y jabón", a:"bottom",
+     good:"Bien. La fase polar retiene los restos del catalizador y el jabón.",
+     bad:"Es la de abajo: ahí quedan metanol, sosa y jabón."},
+    {q:"Toca la fase que flota", a:"top",
+     good:"Sí. El biodiésel flota por su menor densidad.",
+     bad:"La que flota es la superior, el biodiésel."}
+  ];
+
+  var QUIZ = [
+    {q:"¿Qué catalizador se usa en la transesterificación alcalina?",
+     o:["Hidróxido de sodio (NaOH)","Ácido clorhídrico","Cloruro de sodio","Agua destilada"], c:0},
+    {q:"¿Qué subproducto se forma además del biodiésel?",
+     o:["Etanol","Glicerina","Glucosa","Jabón de calcio"], c:1},
+    {q:"¿Para qué se lava el biodiésel con agua?",
+     o:["Para subir el rendimiento","Para darle color","Para retirar metanol, sosa y jabón","Para hacerlo más espeso"], c:2},
+    {q:"Un pH alto en el biodiésel indica...",
+     o:["Producto muy puro","Restos de catalizador alcalino","Mayor poder calorífico","Que no hubo reacción"], c:1},
+    {q:"¿Qué señal visual confirma que la reacción avanzó?",
+     o:["Que se congela","Que aparece humo","Que cambia a rojo","Que se separan dos fases"], c:3},
+    {q:"¿Por qué se filtra el aceite usado antes de reaccionar?",
+     o:["Para retirar sólidos y restos de comida","Para enfriarlo","Para aumentar la acidez","Para convertirlo en jabón"], c:0},
+    {q:"¿Qué ventaja tiene usar exceso de metanol?",
+     o:["Evita la glicerina","Elimina el catalizador","Desplaza el equilibrio hacia el FAME","Abarata el proceso"], c:2},
+    {q:"¿Cuál es la reacción general del proceso?",
+     o:["Aceite + NaOH → biodiésel puro","Triglicérido + metanol → FAME + glicerina","FAME + glicerina → triglicérido","Triglicérido + agua → jabón + glicerol"], c:1}
+  ];
+
+  var state = {name:"", score:0, orderIdx:0, phaseIdx:0, quiz:[], qIdx:0, locked:false, timer:null, left:0};
+
+  var $ = function(id){ return document.getElementById(id); };
+  var screens = ["s-start","s-order","s-sep","s-quiz","s-end"];
+  function show(id){
+    screens.forEach(function(s){ $(s).classList.toggle("on", s===id); });
+    window.scrollTo(0,0);
+  }
+  function setHud(n){
+    $("hud").classList.add("on");
+    $("hudStage").textContent = "Etapa " + n + " de 3";
+    $("hudScore").textContent = state.score;
+  }
+  function syncScore(){ $("hudScore").textContent = state.score; }
+
+  var audioCtx = null, soundOn = true;
+  $("soundBtn").addEventListener("click", function(){
+    soundOn = !soundOn;
+    this.textContent = soundOn ? "🔊" : "🔇";
+  });
+  function beep(freq, dur, type, vol){
+    if(!soundOn) return;
+    try{
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type || "sine"; o.frequency.value = freq;
+      g.gain.value = vol || 0.07;
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+      o.stop(audioCtx.currentTime + dur);
+    }catch(e){}
+  }
+  function okSound(){ beep(720,0.09,"sine",0.08); setTimeout(function(){beep(980,0.12,"sine",0.07);},90); }
+  function badSound(){ beep(170,0.18,"sawtooth",0.05); }
+  function tapSound(){ beep(520,0.05,"triangle",0.04); }
+
+  function shuffle(a){
+    var b = a.slice();
+    for(var i=b.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=b[i]; b[i]=b[j]; b[j]=t; }
+    return b;
+  }
+
+  /* ---------- ETAPA 1 ---------- */
+  function startOrder(){
+    state.orderIdx = 0;
+    $("pool").innerHTML = "";
+    $("timeline").innerHTML = "";
+    var tl = $("timeline");
+    STEPS.forEach(function(_, i){
+      var d = document.createElement("div");
+      d.className = "slot"; d.id = "slot"+i; d.textContent = i+1;
+      tl.appendChild(d);
+    });
+    shuffle(STEPS).forEach(function(step){
+      var b = document.createElement("button");
+      b.className = "chip"; b.dataset.id = step.id;
+      b.innerHTML = "<b>"+step.icon+"</b><span>"+step.label+"</span>";
+      b.addEventListener("click", function(){ pickStep(step, b); });
+      $("pool").appendChild(b);
+    });
+    $("orderFb").className = "feedback";
+    $("orderFb").textContent = "Cada acierto suma 150 puntos. Un error resta 40.";
+    show("s-order"); setHud(1);
+  }
+
+  function pickStep(step, btn){
+    if(state.locked) return;
+    var expected = STEPS[state.orderIdx];
+    if(step.id === expected.id){
+      okSound();
+      btn.classList.add("done");
+      var slot = $("slot" + state.orderIdx);
+      slot.classList.add("filled");
+      slot.textContent = step.icon;
+      state.score += 150; syncScore();
+      state.orderIdx++;
+      $("orderFb").className = "feedback good";
+      $("orderFb").textContent = "¡Bien! " + (state.orderIdx < STEPS.length ? "Sigue el paso " + (state.orderIdx+1) + "." : "Proceso completo.");
+      if(state.orderIdx === STEPS.length){
+        state.locked = true;
+        setTimeout(function(){ state.locked = false; startSeparation(); }, 750);
+      }
+    }else{
+      badSound();
+      btn.classList.add("shake");
+      setTimeout(function(){ btn.classList.remove("shake"); }, 400);
+      state.score = Math.max(0, state.score - 40); syncScore();
+      $("orderFb").className = "feedback bad";
+      $("orderFb").textContent = "Ese no va todavía. Piensa qué se hace primero.";
+    }
+  }
+
+  /* ---------- ETAPA 2 ---------- */
+  function startSeparation(){
+    state.phaseIdx = 0;
+    state.locked = false;
+    show("s-sep"); setHud(2);
+    renderPhase();
+  }
+  function renderPhase(){
+    var p = PHASES[state.phaseIdx];
+    $("sepQ").textContent = p.q;
+    $("sepHint").textContent = "Toca la parte del vaso que corresponda.";
+    $("sepFb").className = "feedback";
+    $("sepFb").textContent = "";
+    var layers = document.querySelectorAll(".layer");
+    for(var i=0;i<layers.length;i++){ layers[i].classList.remove("ok","no"); }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".layer"), function(layer){
+    layer.addEventListener("click", function(){
+      if(state.locked) return;
+      var p = PHASES[state.phaseIdx];
+      if(layer.dataset.layer === p.a){
+        okSound();
+        layer.classList.add("ok");
+        state.score += 150; syncScore();
+        $("sepFb").className = "feedback good";
+        $("sepFb").textContent = p.good;
+        state.locked = true;
+        setTimeout(function(){
+          state.locked = false;
+          state.phaseIdx++;
+          if(state.phaseIdx >= PHASES.length){ startQuiz(); }
+          else{ renderPhase(); }
+        }, 1100);
+      }else{
+        badSound();
+        layer.classList.add("no");
+        $("beaker").classList.add("shake");
+        setTimeout(function(){ $("beaker").classList.remove("shake"); layer.classList.remove("no"); }, 420);
+        state.score = Math.max(0, state.score - 40); syncScore();
+        $("sepFb").className = "feedback bad";
+        $("sepFb").textContent = p.bad;
+      }
+    });
+  });
+
+  /* ---------- ETAPA 3 ---------- */
+  var TOTAL_Q = 5, Q_TIME = 12;
+  function startQuiz(){
+    state.quiz = shuffle(QUIZ).slice(0, TOTAL_Q);
+    state.qIdx = 0;
+    state.locked = false;
+    show("s-quiz"); setHud(3);
+    renderQuestion();
+  }
+  function renderQuestion(){
+    clearInterval(state.timer);
+    state.locked = false;
+    var q = state.quiz[state.qIdx];
+    $("qCount").textContent = "Pregunta " + (state.qIdx+1) + " de " + TOTAL_Q;
+    $("qPts").textContent = "+200";
+    $("qText").textContent = q.q;
+    $("quizFb").className = "feedback";
+    $("quizFb").textContent = "";
+    var box = $("answers");
+    box.innerHTML = "";
+    q.o.forEach(function(txt, i){
+      var b = document.createElement("button");
+      b.className = "choice"; b.textContent = txt;
+      b.addEventListener("click", function(){ answer(i, b); });
+      box.appendChild(b);
+    });
+    state.left = Q_TIME;
+    $("timerBar").style.width = "100%";
+    state.timer = setInterval(function(){
+      state.left -= 0.1;
+      $("timerBar").style.width = Math.max(0, (state.left/Q_TIME)*100) + "%";
+      if(state.left <= 0){ clearInterval(state.timer); timeoutAnswer(); }
+    }, 100);
+  }
+  function lockAnswers(){
+    var btns = document.querySelectorAll("#answers .choice");
+    for(var i=0;i<btns.length;i++){ btns[i].disabled = true; }
+  }
+  function answer(i, btn){
+    if(state.locked) return;
+    state.locked = true;
+    clearInterval(state.timer);
+    var q = state.quiz[state.qIdx];
+    var btns = document.querySelectorAll("#answers .choice");
+    lockAnswers();
+    if(i === q.c){
+      var bonus = Math.max(0, Math.round(state.left * 5));
+      state.score += 200 + bonus;
+      syncScore();
+      btn.classList.add("correct");
+      okSound();
+      $("quizFb").className = "feedback good";
+      $("quizFb").textContent = "¡Correcto! +" + (200 + bonus) + " puntos.";
+    }else{
+      btn.classList.add("wrong");
+      btns[q.c].classList.add("correct");
+      badSound();
+      $("quizFb").className = "feedback bad";
+      $("quizFb").textContent = "La respuesta era: " + q.o[q.c];
+    }
+    setTimeout(nextQuestion, 1200);
+  }
+  function timeoutAnswer(){
+    if(state.locked) return;
+    state.locked = true;
+    var q = state.quiz[state.qIdx];
+    var btns = document.querySelectorAll("#answers .choice");
+    lockAnswers();
+    btns[q.c].classList.add("correct");
+    badSound();
+    $("quizFb").className = "feedback bad";
+    $("quizFb").textContent = "Se acabó el tiempo. Era: " + q.o[q.c];
+    setTimeout(nextQuestion, 1200);
+  }
+  function nextQuestion(){
+    state.qIdx++;
+    if(state.qIdx >= TOTAL_Q){ endGame(); }
+    else{ renderQuestion(); }
+  }
+
+  /* ---------- FINAL ---------- */
+  function rankFor(score){
+    if(score >= 1900) return {t:"Maestro del biodiésel", m:"🏆", msg:"Nivel exposición. Te sabes hasta el mecanismo."};
+    if(score >= 1400) return {t:"Ingeniero químico", m:"🥇", msg:"Muy buen dominio del proceso y de la química."};
+    if(score >= 900)  return {t:"Técnico de laboratorio", m:"🥈", msg:"Buen trabajo. Ya dominas lo esencial."};
+    if(score >= 450)  return {t:"Aprendiz de laboratorio", m:"🧪", msg:"Vas bien. Repasa las fases y el catalizador."};
+    return {t:"Primer día en el lab", m:"🧫", msg:"Tranquilo, el aceite usado no se rinde tan fácil."};
+  }
+  function endGame(){
+    $("hud").classList.remove("on");
+    show("s-end");
+    var r = rankFor(state.score);
+    $("finalScore").textContent = state.score;
+    $("finalName").textContent = state.name ? state.name.toUpperCase() : "JUGADOR";
+    $("finalRank").textContent = r.t;
+    $("medal").textContent = r.m;
+    $("finalMsg").textContent = r.msg;
+    confetti();
+    beep(660,0.12,"sine",0.08);
+    setTimeout(function(){beep(880,0.14,"sine",0.08);},130);
+    setTimeout(function(){beep(1100,0.22,"sine",0.08);},280);
+  }
+  function confetti(){
+    var colors = ["#a3e635","#fbbf24","#38bdf8","#fb7185","#e6edf7"];
+    var wrap = document.createElement("div");
+    wrap.className = "confetti";
+    for(var i=0;i<38;i++){
+      var c = document.createElement("i");
+      c.style.left = Math.random()*100 + "vw";
+      c.style.background = colors[Math.floor(Math.random()*colors.length)];
+      c.style.animationDuration = (1.6 + Math.random()*1.6) + "s";
+      c.style.animationDelay = (Math.random()*0.7) + "s";
+      wrap.appendChild(c);
+    }
+    document.body.appendChild(wrap);
+    setTimeout(function(){ if(wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 4200);
+  }
+
+  /* ---------- CONTROLES ---------- */
+  $("startBtn").addEventListener("click", function(){
+    tapSound();
+    var n = $("name").value.trim();
+    state.name = n || "Anónimo";
+    state.score = 0;
+    state.locked = false;
+    state.orderIdx = 0; state.phaseIdx = 0; state.qIdx = 0;
+    startOrder();
+  });
+  $("againBtn").addEventListener("click", function(){
+    tapSound();
+    state.score = 0;
+    state.locked = false;
+    state.orderIdx = 0; state.phaseIdx = 0; state.qIdx = 0;
+    show("s-start");
+    $("hud").classList.remove("on");
+  });
+
+  $("name").addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ $("startBtn").click(); }
+  });
+})();
+</script>
+</body>
+</html>
